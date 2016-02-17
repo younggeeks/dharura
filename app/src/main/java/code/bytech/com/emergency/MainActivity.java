@@ -1,7 +1,10 @@
 package code.bytech.com.emergency;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.StrictMode;
 import android.support.v4.widget.DrawerLayout;
 import android.os.Bundle;
@@ -12,12 +15,17 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.*;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.Toast;
+
+import code.bytech.com.emergency.activities.FirstAid;
+import code.bytech.com.emergency.activities.ViewAidActivity;
 import code.bytech.com.emergency.adapters.MyAdapter;
 import code.bytech.com.emergency.events.DrawerItemClicked;
+import code.bytech.com.emergency.events.FirstAidItemClick;
 import code.bytech.com.emergency.fragments.*;
 import code.bytech.com.emergency.utils.CheckNet;
 import code.bytech.com.emergency.utils.EventBus;
@@ -25,7 +33,7 @@ import com.squareup.otto.Subscribe;
 import com.yqritc.recyclerviewflexibledivider.HorizontalDividerItemDecoration;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements BlackHandlerInterface {
 
 
     private CheckNet checkNet;
@@ -36,6 +44,9 @@ public class MainActivity extends AppCompatActivity {
     String name="Emergency App";
     String email="emergencyapp@gmail.com";
     int profile=R.drawable.circle;
+    private ConnectivityManager connectivityManager;
+
+    private ViewAid viewAid;
 
 
     private Toolbar toolbar;
@@ -46,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView.LayoutManager layoutManager;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle toggle;
+    private boolean isConnected;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -54,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.ThreadPolicy policy=new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
+        connectivityManager=(ConnectivityManager)getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo=connectivityManager.getActiveNetworkInfo();
+        isConnected=networkInfo!=null && networkInfo.isConnected();
 
         checkNet=new CheckNet(getApplicationContext());
         toolbar=(Toolbar)findViewById(R.id.toolbar);
@@ -137,18 +152,17 @@ public class MainActivity extends AppCompatActivity {
         aSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if (b){
-                    if (checkNet.hasActiveInternetConnection()){
-                        Intent mapIntent=new Intent(MainActivity.this,MapsActivity.class);
+                if (b) {
+                    if (isConnected) {
+                        Intent mapIntent = new Intent(MainActivity.this, MapsActivity.class);
                         startActivity(mapIntent);
                         finish();
-                    }
-                    else {
-                        Toast.makeText(getApplicationContext(),"Thingy is Off",Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Thingy is Off", Toast.LENGTH_LONG).show();
                     }
                     //  Toast.makeText(getApplicationContext(),"Thingy is On",Toast.LENGTH_LONG).show();
-                }else {
-                    Toast.makeText(getApplicationContext(),"Thingy is Off",Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Thingy is Off", Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -166,6 +180,13 @@ public class MainActivity extends AppCompatActivity {
         if (toggle.onOptionsItemSelected(item))
             return true;
         int id = item.getItemId();
+
+        switch (id){
+            case R.id.action_settings:
+                Intent intent=new Intent(MainActivity.this, ViewAidActivity.class);
+                startActivity(intent);
+
+        }
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
@@ -199,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
         if (event==null || TextUtils.isEmpty(event.item )|| event.item.equalsIgnoreCase(currentFragmentTitle)){
             return ;
         }
-        Toast.makeText(this,"Geeks "+event.item,Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Geeks " + event.item, Toast.LENGTH_SHORT).show();
 
         if (event.item.equalsIgnoreCase("hospitali")){
             getSupportFragmentManager().beginTransaction().replace(R.id.frame, HospitalFragment.getInstance()).commit();
@@ -217,8 +238,11 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction().replace(R.id.frame, UmemeFragment.getInstance()).commit();
             getSupportActionBar().setTitle(event.item);
         }else if(event.item.equalsIgnoreCase("huduma ya kwanza")){
-            getSupportFragmentManager().beginTransaction().replace(R.id.frame, FirstAidFragment.getInstance()).commit();
+           Intent intent=new Intent(MainActivity.this, FirstAid.class);
             getSupportActionBar().setTitle(event.item);
+            startActivity(intent);
+
+
         }
 
         else  {
@@ -226,5 +250,33 @@ public class MainActivity extends AppCompatActivity {
 
         }
         currentFragmentTitle=event.item;
+    }
+
+    @Subscribe
+    public void onFirstAidItemClicked(FirstAidItemClick event){
+        Log.d("Item listener main activity",event.item);
+
+    }
+
+
+
+    @Override
+    public void onBackPressed() {
+        // TODO Auto-generated method stub
+//      super.onBackPressed();
+        if(getSupportFragmentManager().getBackStackEntryCount()>0)
+        {
+            getSupportFragmentManager().popBackStack();
+        }
+        else
+        {
+            finish();
+        }
+
+    }
+
+    @Override
+    public void setSelectedFragment(ViewAid viewAid) {
+
     }
 }

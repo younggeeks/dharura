@@ -27,4 +27,6 @@
         <item>Doctor</item>
     </string-array>
     <string name="title_activity_maps">Map</string>
+    <string name="title_activity_view_aid">ViewAidActivity</string>
+    <string name="title_activity_first_aid">FirstAid</string>
 </resources>
